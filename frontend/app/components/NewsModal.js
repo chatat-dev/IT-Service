@@ -11,20 +11,31 @@ export function NewsModal() {
 
     useEffect(() => {
         const checkNews = async () => {
+            // Don't show news modal on admin pages - admin creates news themselves
+            if (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')) return;
+
             const userStr = localStorage.getItem('user');
-            if (!userStr) return; // Only show to logged in users
+            let user = null;
+            let headers = {};
+
+            if (userStr) {
+                try { user = JSON.parse(userStr); } catch (e) { /* ignore */ }
+                if (user?.token) {
+                    headers['Authorization'] = `Bearer ${user.token}`;
+                }
+            }
 
             try {
-                const user = JSON.parse(userStr);
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://192.168.0.112:5250'}/api/news/active`, {
-                    headers: { 'Authorization': `Bearer ${user.token}` }
-                });
+                // Use public endpoint so guests can also see news
+                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.0.112:5250';
+                const res = await fetch(`${apiUrl}/api/public/news/active`, { headers });
 
                 if (res.ok) {
                     const data = await res.json();
 
-                    // Filter out news that the user has chosen not to see again
-                    const hiddenNews = JSON.parse(localStorage.getItem(`hidden_news_ids_${user.id}`) || '[]');
+                    // Filter out news user chose not to see again
+                    const storageKey = user?.id ? `hidden_news_ids_${user.id}` : 'hidden_news_ids_guest';
+                    const hiddenNews = JSON.parse(localStorage.getItem(storageKey) || '[]');
                     const visibleNews = data.filter(item => !hiddenNews.includes(item.id));
 
                     if (visibleNews.length > 0) {
@@ -47,13 +58,15 @@ export function NewsModal() {
 
         if (dontShowAgain) {
             const userStr = localStorage.getItem('user');
+            let userId = 'guest';
             if (userStr) {
-                const user = JSON.parse(userStr);
-                const hiddenNews = JSON.parse(localStorage.getItem(`hidden_news_ids_${user.id}`) || '[]');
-                if (!hiddenNews.includes(currentNewsId)) {
-                    hiddenNews.push(currentNewsId);
-                    localStorage.setItem(`hidden_news_ids_${user.id}`, JSON.stringify(hiddenNews));
-                }
+                try { const user = JSON.parse(userStr); if (user?.id) userId = user.id; } catch (e) { /* ignore */ }
+            }
+            const storageKey = `hidden_news_ids_${userId}`;
+            const hiddenNews = JSON.parse(localStorage.getItem(storageKey) || '[]');
+            if (!hiddenNews.includes(currentNewsId)) {
+                hiddenNews.push(currentNewsId);
+                localStorage.setItem(storageKey, JSON.stringify(hiddenNews));
             }
         }
 
