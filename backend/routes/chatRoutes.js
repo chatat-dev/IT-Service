@@ -5,7 +5,7 @@ const fs = require('fs');
 const multer = require('multer');
 const pool = require('../config/db');
 const { protect } = require('../middleware/authMiddleware');
-const { getTicketChatHistory, clearChatHistory, getUnreadChatCount, getItUnreadChatCount, markChatRead, unsendChatMessage } = require('../controllers/chatController');
+const { getTicketChatHistory, clearChatHistory, getUnreadChatCount, getItUnreadChatCount, getUnreadChatsPerTicket, markChatRead, unsendChatMessage } = require('../controllers/chatController');
 
 // File upload setup
 const uploadDir = path.join(__dirname, '..', 'uploads', 'chat');
@@ -59,6 +59,7 @@ const uploadWrapper = async (req, res, next) => {
 router.use(protect);
 router.get('/unread-count', getUnreadChatCount);
 router.get('/it-unread-count', getItUnreadChatCount);
+router.get('/user-unread-tickets', getUnreadChatsPerTicket);
 router.delete('/message/:id', unsendChatMessage);
 router.put('/:ticket_id/read', markChatRead);
 router.get('/:ticket_id', getTicketChatHistory);

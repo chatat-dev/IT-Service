@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { io } from 'socket.io-client';
 import { useLanguage } from '../../components/LanguageProvider';
 import { useModal } from '../../components/ModalProvider';
@@ -51,13 +51,15 @@ const renderMessageWithLinks = (text, isMe) => {
 
 export default function UserChat() {
     const { t } = useLanguage();
+    const router = useRouter();
     const searchParams = useSearchParams();
-    const ticketId = searchParams.get('ticketId');
+    const ticketId = searchParams.get('ticket');
     const { showConfirm } = useModal();
 
     const [tickets, setTickets] = useState([]);
     const [selectedTicketId, setSelectedTicketId] = useState(ticketId || '');
     const [messages, setMessages] = useState([]);
+    const [unreadTickets, setUnreadTickets] = useState([]);
     const [newMessage, setNewMessage] = useState('');
     const [token, setToken] = useState('');
     const [userId, setUserId] = useState(null);
@@ -80,6 +82,7 @@ export default function UserChat() {
             setToken(user.token);
             setUserId(user.id);
             fetchMyTickets(user.token);
+            fetchUnreadTickets(user.token);
 
             socketRef.current = io(`${process.env.NEXT_PUBLIC_API_URL || 'http://192.168.0.112:5250'}`, { query: { token: user.token } });
 
@@ -92,12 +95,27 @@ export default function UserChat() {
                         headers: { 'Authorization': `Bearer ${user.token}` }
                     }).then(() => {
                         window.dispatchEvent(new Event('chat_read'));
+                        fetchUnreadTickets(user.token);
                     }).catch(err => console.error(err));
+                } else {
+                    // Update unread badges if message is for another ticket
+                    fetchUnreadTickets(user.token);
                 }
+            });
+
+            socketRef.current.on('receive_message_global', (msgData) => {
+                if (msgData?.sender_id !== user.id && msgData?.ticket_owner_id === user.id) {
+                    fetchUnreadTickets(user.token);
+                }
+            });
+
+            socketRef.current.on('refresh_chats', () => {
+                fetchUnreadTickets(user.token);
             });
 
             socketRef.current.on('refresh_tickets', () => {
                 fetchMyTickets(user.token);
+                fetchUnreadTickets(user.token);
             });
 
             socketRef.current.on('message_unsent', (msgId) => {
@@ -108,7 +126,13 @@ export default function UserChat() {
                 setMessages([]);
             });
 
-            return () => socketRef.current.disconnect();
+            const handleChatRead = () => fetchUnreadTickets(user.token);
+            window.addEventListener('chat_read', handleChatRead);
+
+            return () => {
+                socketRef.current.disconnect();
+                window.removeEventListener('chat_read', handleChatRead);
+            };
         }
     }, []);
 
@@ -142,7 +166,16 @@ export default function UserChat() {
             const data = await res.json();
             const list = Array.isArray(data) ? data : [];
             setTickets(list);
-            if (!selectedTicketId && list.length > 0) setSelectedTicketId(list[0].id);
+        } catch (err) { console.error(err); }
+    };
+
+    const fetchUnreadTickets = async (t) => {
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://192.168.0.112:5250'}/api/chat/user-unread-tickets`, {
+                headers: { 'Authorization': `Bearer ${t}` }
+            });
+            const data = await res.json();
+            if (Array.isArray(data)) setUnreadTickets(data);
         } catch (err) { console.error(err); }
     };
 
@@ -243,23 +276,27 @@ export default function UserChat() {
                 <div className="glass-card chat-sidebar" style={{ width: '300px', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
                     <h3 style={{ marginBottom: '1rem', paddingBottom: '0.5rem', borderBottom: '1px solid var(--color-glass-border)' }}>{t('myTickets')}</h3>
                     <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                        {tickets.map(tk => (
-                            <li
-                                key={tk.id}
-                                onClick={() => setSelectedTicketId(tk.id)}
-                                style={{
-                                    padding: '1rem', cursor: 'pointer', borderRadius: '8px',
-                                    backgroundColor: selectedTicketId == tk.id ? 'var(--color-glass)' : 'transparent',
-                                    border: selectedTicketId == tk.id ? '1px solid var(--color-primary)' : '1px solid transparent',
-                                    transition: 'all 0.3s ease'
-                                }}
-                            >
-                                <strong>{tk.ticket_no}</strong>
-                                <div style={{ fontSize: '0.8rem', color: tk.status === 'closed' ? 'var(--color-error)' : 'var(--color-text-muted)', marginTop: '0.25rem', fontStyle: tk.status === 'closed' ? 'italic' : 'normal' }}>
-                                    {tk.status === 'closed' ? t('closed') : tk.status}
-                                </div>
-                            </li>
-                        ))}
+                        {tickets.map(tk => {
+                            const hasUnread = unreadTickets.includes(tk.id) && selectedTicketId != tk.id;
+                            return (
+                                <li
+                                    key={tk.id}
+                                    onClick={() => setSelectedTicketId(tk.id)}
+                                    style={{
+                                        position: 'relative', padding: '1rem', cursor: 'pointer', borderRadius: '8px',
+                                        backgroundColor: selectedTicketId == tk.id ? 'var(--color-glass)' : 'transparent',
+                                        border: selectedTicketId == tk.id ? '1px solid var(--color-primary)' : '1px solid transparent',
+                                        transition: 'all 0.3s ease'
+                                    }}
+                                >
+                                    <strong>{tk.ticket_no}</strong>
+                                    {hasUnread && <span style={{ position: 'absolute', top: '12px', right: '12px', width: '10px', height: '10px', backgroundColor: '#ef4444', borderRadius: '50%', boxShadow: '0 0 0 2px var(--color-bg-base)' }}></span>}
+                                    <div style={{ fontSize: '0.8rem', color: tk.status === 'closed' ? 'var(--color-error)' : 'var(--color-text-muted)', marginTop: '0.25rem', fontStyle: tk.status === 'closed' ? 'italic' : 'normal' }}>
+                                        {tk.status === 'closed' ? t('closed') : tk.status}
+                                    </div>
+                                </li>
+                            );
+                        })}
                     </ul>
                 </div>
 
@@ -306,74 +343,74 @@ export default function UserChat() {
                                                 {isMe ? t('you') : (m.sender_name || t('itSupportLabel'))} · {new Date(m.created_at).toLocaleTimeString()}
                                             </div>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexDirection: isMe ? 'row-reverse' : 'row' }}>
-                                            <div style={{
-                                                padding: '0.75rem 1rem', borderRadius: '12px',
-                                                backgroundColor: isMe ? 'var(--color-primary)' : 'var(--color-glass)',
-                                                color: isMe ? '#fff' : 'var(--color-text-main)',
-                                                border: isMe ? 'none' : '1px solid var(--color-glass-border)',
-                                                wordBreak: 'break-word', transition: 'opacity 0.2s', opacity: 1, cursor: 'pointer'
-                                            }}
-                                                onClick={(e) => { e.stopPropagation(); setMobileMenuMsgId(mobileMenuMsgId === m.id ? null : m.id); }}
-                                            >
-                                                {renderMessageContent(m.message, isMe)}
-                                                {parsedFiles.length > 0 && (
-                                                    <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                                                        {parsedFiles.map((f, fi) => {
-                                                            const fileUrl = f.url ? `${process.env.NEXT_PUBLIC_API_URL || 'http://192.168.0.112:5250'}${f.url}` : '#';
-                                                            const isImage = f.url && /\.(jpg|jpeg|png|gif|webp)$/i.test(f.url);
-                                                            return (
-                                                                <div key={fi} style={{ marginTop: '0.25rem' }}>
-                                                                    {isImage ? (
-                                                                        <a href={fileUrl} target="_blank" rel="noopener noreferrer">
-                                                                            <img src={fileUrl} alt={f.name} style={{ maxWidth: '200px', maxHeight: '200px', borderRadius: '8px', cursor: 'pointer', border: '1px solid var(--color-glass-border)', objectFit: 'contain', backgroundColor: 'rgba(0,0,0,0.1)' }} />
-                                                                        </a>
-                                                                    ) : (
-                                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', backgroundColor: isMe ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)', padding: '0.4rem 0.6rem', borderRadius: '6px' }}>
-                                                                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm4 18H6V4h7v5h5v11z" /></svg>
-                                                                            <span style={{ fontSize: '0.8rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '150px', color: isMe ? '#fff' : 'var(--color-text-main)' }}>{f.name || `File ${fi + 1}`}</span>
-                                                                            <a href={fileUrl} download target="_blank" rel="noopener noreferrer" style={{ marginLeft: 'auto', background: isMe ? 'rgba(255,255,255,0.3)' : 'var(--color-primary)', color: '#fff', padding: '0.2rem 0.5rem', borderRadius: '4px', textDecoration: 'none', fontSize: '0.75rem' }}>
-                                                                                Download
-                                                                            </a>
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                )}
-                                            </div>
-                                            {/* Hover / Tap Action Menu */}
-                                            {showMenu && (
                                                 <div style={{
-                                                    display: 'flex', gap: '0.2rem',
-                                                    background: 'var(--color-bg-card)',
-                                                    padding: '0.3rem', borderRadius: '8px',
-                                                    boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-                                                    border: '1px solid var(--color-glass-border)',
-                                                    animation: 'fadeDropdown 0.2s ease-out', zIndex: 10
-                                                }} onClick={e => e.stopPropagation()}>
-                                                    <button
-                                                        onClick={() => { setReplyingTo(m); setHoveredMsgId(null); setMobileMenuMsgId(null); }}
-                                                        style={{ background: 'none', border: 'none', padding: '0.4rem', cursor: 'pointer', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                                        onMouseOver={e => e.currentTarget.style.backgroundColor = 'var(--color-glass)'}
-                                                        onMouseOut={e => e.currentTarget.style.backgroundColor = 'transparent'}
-                                                        title="ตอบกลับ (Reply)"
-                                                    >
-                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-main)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 17 4 12 9 7"></polyline><path d="M20 18v-2a4 4 0 0 0-4-4H4"></path></svg>
-                                                    </button>
-                                                    {canUnsend && (
-                                                        <button
-                                                            onClick={() => { handleUnsend(m.id); setHoveredMsgId(null); setMobileMenuMsgId(null); }}
-                                                            style={{ background: 'none', border: 'none', padding: '0.4rem', cursor: 'pointer', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                                            onMouseOver={e => e.currentTarget.style.backgroundColor = 'rgba(239,68,68,0.1)'}
-                                                            onMouseOut={e => e.currentTarget.style.backgroundColor = 'transparent'}
-                                                            title="ยกเลิกข้อความ (Unsend)"
-                                                        >
-                                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                                                        </button>
+                                                    padding: '0.75rem 1rem', borderRadius: '12px',
+                                                    backgroundColor: isMe ? 'var(--color-primary)' : 'var(--color-glass)',
+                                                    color: isMe ? '#fff' : 'var(--color-text-main)',
+                                                    border: isMe ? 'none' : '1px solid var(--color-glass-border)',
+                                                    wordBreak: 'break-word', transition: 'opacity 0.2s', opacity: 1, cursor: 'pointer'
+                                                }}
+                                                    onClick={(e) => { e.stopPropagation(); setMobileMenuMsgId(mobileMenuMsgId === m.id ? null : m.id); }}
+                                                >
+                                                    {renderMessageContent(m.message, isMe)}
+                                                    {parsedFiles.length > 0 && (
+                                                        <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                                                            {parsedFiles.map((f, fi) => {
+                                                                const fileUrl = f.url ? `${process.env.NEXT_PUBLIC_API_URL || 'http://192.168.0.112:5250'}${f.url}` : '#';
+                                                                const isImage = f.url && /\.(jpg|jpeg|png|gif|webp)$/i.test(f.url);
+                                                                return (
+                                                                    <div key={fi} style={{ marginTop: '0.25rem' }}>
+                                                                        {isImage ? (
+                                                                            <a href={fileUrl} target="_blank" rel="noopener noreferrer">
+                                                                                <img src={fileUrl} alt={f.name} style={{ maxWidth: '200px', maxHeight: '200px', borderRadius: '8px', cursor: 'pointer', border: '1px solid var(--color-glass-border)', objectFit: 'contain', backgroundColor: 'rgba(0,0,0,0.1)' }} />
+                                                                            </a>
+                                                                        ) : (
+                                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', backgroundColor: isMe ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)', padding: '0.4rem 0.6rem', borderRadius: '6px' }}>
+                                                                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm4 18H6V4h7v5h5v11z" /></svg>
+                                                                                <span style={{ fontSize: '0.8rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '150px', color: isMe ? '#fff' : 'var(--color-text-main)' }}>{f.name || `File ${fi + 1}`}</span>
+                                                                                <a href={fileUrl} download target="_blank" rel="noopener noreferrer" style={{ marginLeft: 'auto', background: isMe ? 'rgba(255,255,255,0.3)' : 'var(--color-primary)', color: '#fff', padding: '0.2rem 0.5rem', borderRadius: '4px', textDecoration: 'none', fontSize: '0.75rem' }}>
+                                                                                    Download
+                                                                                </a>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
                                                     )}
                                                 </div>
-                                            )}
+                                                {/* Hover / Tap Action Menu */}
+                                                {showMenu && (
+                                                    <div style={{
+                                                        display: 'flex', gap: '0.2rem',
+                                                        background: 'var(--color-bg-card)',
+                                                        padding: '0.3rem', borderRadius: '8px',
+                                                        boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+                                                        border: '1px solid var(--color-glass-border)',
+                                                        animation: 'fadeDropdown 0.2s ease-out', zIndex: 10
+                                                    }} onClick={e => e.stopPropagation()}>
+                                                        <button
+                                                            onClick={() => { setReplyingTo(m); setHoveredMsgId(null); setMobileMenuMsgId(null); }}
+                                                            style={{ background: 'none', border: 'none', padding: '0.4rem', cursor: 'pointer', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                                            onMouseOver={e => e.currentTarget.style.backgroundColor = 'var(--color-glass)'}
+                                                            onMouseOut={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                                                            title="ตอบกลับ (Reply)"
+                                                        >
+                                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-main)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 17 4 12 9 7"></polyline><path d="M20 18v-2a4 4 0 0 0-4-4H4"></path></svg>
+                                                        </button>
+                                                        {canUnsend && (
+                                                            <button
+                                                                onClick={() => { handleUnsend(m.id); setHoveredMsgId(null); setMobileMenuMsgId(null); }}
+                                                                style={{ background: 'none', border: 'none', padding: '0.4rem', cursor: 'pointer', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                                                onMouseOver={e => e.currentTarget.style.backgroundColor = 'rgba(239,68,68,0.1)'}
+                                                                onMouseOut={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                                                                title="ยกเลิกข้อความ (Unsend)"
+                                                            >
+                                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     );
@@ -405,18 +442,18 @@ export default function UserChat() {
                                             <button onClick={() => setReplyingTo(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', fontSize: '1.2rem', padding: '0 0.5rem' }}>×</button>
                                         </div>
                                     )}
-                                <form onSubmit={sendMessage} style={{ padding: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                                    <input type="file" ref={fileInputRef} onChange={handleFileUpload} style={{ display: 'none' }} multiple />
-                                    <button type="button" onClick={() => fileInputRef.current?.click()} className="btn btn-outline" style={{ padding: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title={t('attachFiles')}>
-                                        <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" /></svg>
-                                    </button>
-                                    <input
-                                        type="text" className="input" style={{ flex: 1, marginBottom: 0 }}
-                                        placeholder={t('typeMessage') + " (or Ctrl+V to paste image)"}
-                                        value={newMessage} onChange={e => setNewMessage(e.target.value)} onPaste={handlePaste}
-                                    />
-                                    <button type="submit" className="btn btn-primary" disabled={!newMessage.trim()}>{t('send')}</button>
-                                </form>
+                                    <form onSubmit={sendMessage} style={{ padding: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                        <input type="file" ref={fileInputRef} onChange={handleFileUpload} style={{ display: 'none' }} multiple />
+                                        <button type="button" onClick={() => fileInputRef.current?.click()} className="btn btn-outline" style={{ padding: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title={t('attachFiles')}>
+                                            <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" /></svg>
+                                        </button>
+                                        <input
+                                            type="text" className="input" style={{ flex: 1, marginBottom: 0 }}
+                                            placeholder={t('typeMessage') + " (or Ctrl+V to paste image)"}
+                                            value={newMessage} onChange={e => setNewMessage(e.target.value)} onPaste={handlePaste}
+                                        />
+                                        <button type="submit" className="btn btn-primary" disabled={!newMessage.trim()}>{t('send')}</button>
+                                    </form>
                                 </div>
                             )}
                         </>

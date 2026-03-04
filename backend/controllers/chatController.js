@@ -161,4 +161,27 @@ const getItUnreadChatCount = async (req, res) => {
     }
 };
 
-module.exports = { getTicketChatHistory, clearChatHistory, getUnreadChatCount, getItUnreadChatCount, markChatRead, unsendChatMessage };
+const getUnreadChatsPerTicket = async (req, res) => {
+    const userId = req.user.id;
+    try {
+        // Get list of ticket IDs where the user has unread messages
+        const [rows] = await pool.query(`
+            SELECT DISTINCT c.ticket_id
+            FROM chats c
+            JOIN tickets t ON c.ticket_id = t.id
+            WHERE t.user_id = ?
+            AND c.sender_id != ?
+            AND (
+                c.created_at > COALESCE(
+                    (SELECT cr.last_read_at FROM chat_reads cr WHERE cr.ticket_id = c.ticket_id AND cr.user_id = ?),
+                    '1970-01-01'
+                )
+            )
+        `, [userId, userId, userId]);
+        res.json(rows.map(r => r.ticket_id));
+    } catch (err) {
+        res.status(500).json({ message: 'Error fetching unread tickets', error: err.message });
+    }
+};
+
+module.exports = { getTicketChatHistory, clearChatHistory, getUnreadChatCount, getItUnreadChatCount, getUnreadChatsPerTicket, markChatRead, unsendChatMessage };
