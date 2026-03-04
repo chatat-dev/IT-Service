@@ -220,6 +220,15 @@ export default function ITRequestBoard() {
     const openDetailModal = async (tk) => {
         setSelectedTicket(tk);
         setModalType('detail');
+
+        // Fetch Notes
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://192.168.0.112:5250'}/api/tickets/${tk.id}/notes`, { headers: { 'Authorization': `Bearer ${token}` } });
+            const data = await res.json();
+            if (Array.isArray(data)) setNotes(data);
+            else setNotes([]);
+        } catch (err) { console.error(err); setNotes([]); }
+
         if (!tk.is_viewed_by_me) {
             try {
                 await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://192.168.0.112:5250'}/api/tickets/${tk.id}/view`, {
@@ -516,7 +525,28 @@ export default function ITRequestBoard() {
                                 ) : null;
                             } catch (err) { return null; }
                         })()}
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
+
+                        {/* Internal Notes Section */}
+                        {notes && notes.length > 0 && (
+                            <div style={{ marginTop: '1.5rem', borderTop: '1px solid var(--color-glass-border)', paddingTop: '1rem' }}>
+                                <label className="label" style={{ fontWeight: '600', color: 'var(--color-warning)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    📝 Internal Notes
+                                </label>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
+                                    {notes.map((n, i) => (
+                                        <div key={i} style={{ padding: '0.5rem 0.75rem', background: 'rgba(245, 158, 11, 0.05)', borderLeft: '3px solid var(--color-warning)', borderRadius: '0 4px 4px 0', fontSize: '0.85rem' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
+                                                <strong style={{ color: 'var(--color-primary)' }}>{n.user_name || 'System'}</strong>
+                                                <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>{new Date(n.created_at).toLocaleString()}</span>
+                                            </div>
+                                            <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{n.action}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
                             <button className="btn btn-outline" onClick={() => setModalType(null)}>Close</button>
                         </div>
                     </div>
