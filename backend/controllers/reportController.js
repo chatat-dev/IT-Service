@@ -72,12 +72,16 @@ const exportTickets = async (req, res) => {
     const { from, to, format } = req.query;
     try {
         let query = `
-            SELECT t.ticket_no, t.status, t.description, t.ip_address, t.solution,
+            SELECT t.ticket_no, t.status, t.description, t.ip_address, t.solution, t.phone,
                 t.created_at, t.closed_at, t.guest_name, t.guest_phone,
                 l.name as location_name, c.name as category_name,
-                u.name as assigned_name, u2.name as requester_name
+                cp.name as company_name, s.name as site_name, d.name as dept_name,
+                u.name as assigned_name, u2.name as requester_name, u2.phone as user_phone
             FROM tickets t
             LEFT JOIN locations l ON t.location_id = l.id
+            LEFT JOIN companies cp ON t.company_id = cp.id
+            LEFT JOIN sites s ON t.site_id = s.id
+            LEFT JOIN departments d ON t.department_id = d.id
             LEFT JOIN categories c ON t.category_id = c.id
             LEFT JOIN users u ON t.assigned_to = u.id
             LEFT JOIN users u2 ON t.user_id = u2.id
@@ -99,7 +103,12 @@ const exportTickets = async (req, res) => {
                 { header: 'Status', key: 'status', width: 12 },
                 { header: 'Requester', key: 'requester_name', width: 25 },
                 { header: 'Guest Name', key: 'guest_name', width: 25 },
-                { header: 'Location', key: 'location_name', width: 25 },
+                { header: 'Phone', key: 'phone', width: 15 },
+                { header: 'Location', key: 'location_name', width: 20 },
+                { header: 'Company', key: 'company_name', width: 20 },
+                { header: 'Site', key: 'site_name', width: 20 },
+                { header: 'Department', key: 'dept_name', width: 20 },
+                { header: 'IP Address', key: 'ip_address', width: 15 },
                 { header: 'Category', key: 'category_name', width: 25 },
                 { header: 'Assigned To', key: 'assigned_name', width: 25 },
                 { header: 'Description', key: 'description', width: 50 },
@@ -108,12 +117,33 @@ const exportTickets = async (req, res) => {
                 { header: 'Closed At', key: 'closed_at', width: 22 },
             ];
 
+            // Style headers
+            worksheet.getRow(1).eachCell((cell) => {
+                cell.font = { bold: true };
+                cell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: 'FFF2F2F2' } // Light gray
+                };
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
+            });
+
             const formattedRows = rows.map(r => ({
                 ticket_no: r.ticket_no,
                 status: r.status,
                 requester_name: r.requester_name || '',
                 guest_name: r.guest_name || '',
+                phone: r.guest_phone || r.phone || r.user_phone || '',
                 location_name: r.location_name || '',
+                company_name: r.company_name || '',
+                site_name: r.site_name || '',
+                dept_name: r.dept_name || '',
+                ip_address: r.ip_address || '',
                 category_name: r.category_name || '',
                 assigned_name: r.assigned_name || '',
                 description: r.description || '',
