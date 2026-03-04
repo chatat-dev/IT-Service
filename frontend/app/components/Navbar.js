@@ -52,7 +52,7 @@ export function Navbar() {
                 const [usersRes, ticketsRes, chatRes] = await Promise.all([
                     fetch(`${API}/api/it/pending-users`, { headers }),
                     fetch(`${API}/api/tickets/board`, { headers }),
-                    fetch(`${API}/api/chats/it-unread-count`, { headers })
+                    fetch(`${API}/api/chat/it-unread-count`, { headers })
                 ]);
                 const users = await usersRes.json();
                 const tickets = await ticketsRes.json();
@@ -64,7 +64,7 @@ export function Navbar() {
 
         const fetchUserChatCount = async () => {
             try {
-                const res = await fetch(`${API}/api/chats/unread-count`, { headers });
+                const res = await fetch(`${API}/api/chat/unread-count`, { headers });
                 const data = await res.json();
                 setCounts(prev => ({ ...prev, unreadUserChats: data.unreadCount || 0 }));
             } catch (err) { console.error(err); }

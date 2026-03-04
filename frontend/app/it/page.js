@@ -49,7 +49,7 @@ export default function ITDashboard() {
             const [ticketsRes, usersRes, chatRes] = await Promise.all([
                 fetch(`${API}/api/tickets/board`, { headers }),
                 fetch(`${API}/api/it/pending-users`, { headers }),
-                fetch(`${API}/api/chats/it-unread-count`, { headers })
+                fetch(`${API}/api/chat/it-unread-count`, { headers })
             ]);
 
             const tickets = await ticketsRes.json();
