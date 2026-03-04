@@ -46,9 +46,10 @@ export default function ITDashboard() {
             const API = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.0.112:5250';
             const headers = { 'Authorization': `Bearer ${t}` };
 
-            const [ticketsRes, usersRes] = await Promise.all([
+            const [ticketsRes, usersRes, chatRes] = await Promise.all([
                 fetch(`${API}/api/tickets/board`, { headers }),
-                fetch(`${API}/api/it/pending-users`, { headers }) // Works for both IT and Admin
+                fetch(`${API}/api/it/pending-users`, { headers }),
+                fetch(`${API}/api/chats/it-unread-count`, { headers })
             ]);
 
             const tickets = await ticketsRes.json();
@@ -57,7 +58,10 @@ export default function ITDashboard() {
             const users = usersRes.ok ? await usersRes.json() : [];
             const pendingUsers = Array.isArray(users) ? users.length : 0;
 
-            setCounts(prev => ({ ...prev, openTickets: unreadTickets, pendingUsers }));
+            const chatData = chatRes.ok ? await chatRes.json() : { unreadCount: 0 };
+            const unreadChats = chatData.unreadCount || 0;
+
+            setCounts({ openTickets: unreadTickets, pendingUsers, unreadChats });
         } catch (err) { console.error('Error fetching counts:', err); }
     };
 

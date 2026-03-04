@@ -49,20 +49,22 @@ export function Navbar() {
 
         const fetchItCounts = async () => {
             try {
-                const [usersRes, ticketsRes] = await Promise.all([
+                const [usersRes, ticketsRes, chatRes] = await Promise.all([
                     fetch(`${API}/api/it/pending-users`, { headers }),
-                    fetch(`${API}/api/tickets/board`, { headers })
+                    fetch(`${API}/api/tickets/board`, { headers }),
+                    fetch(`${API}/api/chats/it-unread-count`, { headers })
                 ]);
                 const users = await usersRes.json();
                 const tickets = await ticketsRes.json();
                 const unread = Array.isArray(tickets) ? tickets.filter(t => !t.is_viewed_by_me && t.status !== 'closed').length : 0;
-                setCounts(prev => ({ ...prev, pendingUsers: Array.isArray(users) ? users.length : 0, openTickets: unread }));
+                const chatData = chatRes.ok ? await chatRes.json() : { unreadCount: 0 };
+                setCounts(prev => ({ ...prev, pendingUsers: Array.isArray(users) ? users.length : 0, openTickets: unread, unreadItChats: chatData.unreadCount || 0 }));
             } catch (err) { console.error(err); }
         };
 
         const fetchUserChatCount = async () => {
             try {
-                const res = await fetch(`${API}/api/chat/unread-count`, { headers });
+                const res = await fetch(`${API}/api/chats/unread-count`, { headers });
                 const data = await res.json();
                 setCounts(prev => ({ ...prev, unreadUserChats: data.unreadCount || 0 }));
             } catch (err) { console.error(err); }
