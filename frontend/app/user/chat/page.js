@@ -418,10 +418,20 @@ export default function UserChat() {
                                 <div ref={chatEndRef} />
                             </div>
 
-
                             {tickets.find(tk => tk.id == selectedTicketId)?.status === 'closed' ? (
                                 <div style={{ padding: '1rem', borderTop: '1px solid var(--color-glass-border)', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.9rem', backgroundColor: 'rgba(255,255,255,0.02)' }}>
-                                    {t('ticketClosedReadOnly')}
+                                    <div style={{ fontWeight: '500', marginBottom: '0.3rem' }}>{t('ticketClosedReadOnly')}</div>
+                                    {(() => {
+                                        const tkk = tickets.find(tk => tk.id == selectedTicketId);
+                                        if (tkk && tkk.closed_at && !tkk.keep_chat_history) {
+                                            const deleteDate = new Date(tkk.closed_at);
+                                            deleteDate.setDate(deleteDate.getDate() + 7);
+                                            return <div style={{ fontSize: '0.82rem', color: '#ef4444', marginTop: '0.2rem' }}>⚠️ ประวัติแชทนี้จะถูกลบออกจากระบบในวันที่ {deleteDate.toLocaleDateString('th-TH')}</div>;
+                                        } else if (tkk && tkk.keep_chat_history) {
+                                            return <div style={{ fontSize: '0.82rem', color: '#10b981', marginTop: '0.2rem' }}>💾 ประวัติแชทนี้ถูกบันทึกเก็บไว้โดยเจ้าหน้าที่</div>;
+                                        }
+                                        return null;
+                                    })()}
                                 </div>
                             ) : !tickets.find(tk => tk.id == selectedTicketId)?.assigned_to ? (
                                 <div style={{ padding: '1rem', borderTop: '1px solid var(--color-glass-border)', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.9rem', backgroundColor: 'rgba(255,255,255,0.02)' }}>
