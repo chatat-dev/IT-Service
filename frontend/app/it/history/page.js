@@ -12,6 +12,7 @@ export default function ITHistoryPage() {
     const [editingTicket, setEditingTicket] = useState(null);
     const [editSolutionText, setEditSolutionText] = useState('');
     const [detailTicket, setDetailTicket] = useState(null);
+    const [detailNotes, setDetailNotes] = useState([]);
 
     // Link Asset
     const [linkTicket, setLinkTicket] = useState(null);
@@ -35,6 +36,16 @@ export default function ITHistoryPage() {
             if (Array.isArray(data)) {
                 setTickets(data.filter(tk => tk.status === 'closed'));
             }
+        } catch (err) { console.error(err); }
+    };
+
+    const openDetailModal = async (tk) => {
+        setDetailTicket(tk);
+        setDetailNotes([]);
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://192.168.0.112:5250'}/api/tickets/${tk.id}/notes`, { headers: { 'Authorization': `Bearer ${token}` } });
+            const data = await res.json();
+            if (Array.isArray(data)) setDetailNotes(data);
         } catch (err) { console.error(err); }
     };
 
@@ -126,7 +137,7 @@ export default function ITHistoryPage() {
                                     <td>
                                         <strong
                                             style={{ cursor: 'pointer', color: 'var(--color-primary)', textDecoration: 'underline' }}
-                                            onClick={() => setDetailTicket(tk)}
+                                            onClick={() => openDetailModal(tk)}
                                         >
                                             {tk.ticket_no}
                                         </strong>
@@ -163,7 +174,7 @@ export default function ITHistoryPage() {
                     return (
                         <div key={tk.id} className="glass-card" style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <strong style={{ cursor: 'pointer', color: 'var(--color-primary)', textDecoration: 'underline', fontSize: '1.1rem' }} onClick={() => setDetailTicket(tk)}>
+                                <strong style={{ cursor: 'pointer', color: 'var(--color-primary)', textDecoration: 'underline', fontSize: '1.1rem' }} onClick={() => openDetailModal(tk)}>
                                     {tk.ticket_no}
                                 </strong>
                                 <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', textAlign: 'right' }}>
@@ -243,8 +254,11 @@ export default function ITHistoryPage() {
                                 { label: '📞 Phone', value: detailTicket.guest_phone || detailTicket.phone || '-' },
                                 { label: '📅 Created', value: new Date(detailTicket.created_at).toLocaleString() },
                                 { label: '📅 Closed', value: detailTicket.closed_at ? new Date(detailTicket.closed_at).toLocaleString() : '-' },
-                                { label: '📍 Location', value: detailTicket.location_name || '-' },
                                 { label: '🏢 Company', value: detailTicket.company_name || '-' },
+                                { label: '📍 Site', value: detailTicket.site_name || '-' },
+                                { label: '📍 Location', value: detailTicket.location_name || '-' },
+                                { label: '🏢 Department', value: detailTicket.dept_name || '-' },
+                                { label: '🌐 IP Address', value: detailTicket.ip_address || '-' },
                                 { label: '🔧 Assigned To', value: detailTicket.assigned_name || '-' },
                                 { label: '🏷️ Category', value: detailTicket.category_name || '-' },
                             ].map((item, i) => (
@@ -276,6 +290,26 @@ export default function ITHistoryPage() {
                                     color: '#065f46', fontSize: '0.9rem', lineHeight: '1.6', whiteSpace: 'pre-wrap'
                                 }}>
                                     {detailTicket.solution}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Internal Notes Section */}
+                        {detailNotes && detailNotes.length > 0 && (
+                            <div style={{ marginBottom: '1rem', borderTop: '1px solid #e5e7eb', paddingTop: '1rem' }}>
+                                <div style={{ fontSize: '0.8rem', color: '#f59e0b', fontWeight: '600', marginBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                    📝 Internal Notes
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                    {detailNotes.map((n, i) => (
+                                        <div key={i} style={{ padding: '0.75rem', background: '#fffbeb', borderLeft: '3px solid #f59e0b', borderRadius: '0 8px 8px 0', fontSize: '0.85rem' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
+                                                <strong style={{ color: '#4f46e5' }}>{n.user_name || 'System'}</strong>
+                                                <span style={{ color: '#9ca3af', fontSize: '0.75rem' }}>{new Date(n.created_at).toLocaleString()}</span>
+                                            </div>
+                                            <p style={{ margin: 0, color: '#374151', whiteSpace: 'pre-wrap' }}>{n.action}</p>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         )}

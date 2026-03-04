@@ -102,7 +102,17 @@ export default function EditComputer({ params }) {
 
     const generateQR = async () => {
         try {
-            const url = `${window.location.origin}/it/computers/${id}`;
+            let hostUrl = window.location.origin;
+            if (hostUrl.includes('localhost')) {
+                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.0.112:5250';
+                try {
+                    const parsedApiUrl = new URL(apiUrl);
+                    hostUrl = `${parsedApiUrl.protocol}//${parsedApiUrl.hostname}:${window.location.port}`;
+                } catch (e) {
+                    console.error('Failed to parse API URL for QR host', e);
+                }
+            }
+            const url = `${hostUrl}/it/computers/${id}`;
             const qrUrl = await QRCode.toDataURL(url, { width: 300, margin: 2, color: { dark: '#4f46e5', light: '#ffffff' } });
             setQrCodeDataUrl(qrUrl);
         } catch (err) {
@@ -533,7 +543,7 @@ export default function EditComputer({ params }) {
                 <div style={cardStyle}>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '2px solid rgba(79, 70, 229, 0.1)', paddingBottom: '0.75rem' }}>
                         <h2 style={{ fontSize: '1.25rem', fontWeight: '700', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '0.75rem', margin: 0 }}>
-                            <FiInfo className="desktop-only" /> 
+                            <FiInfo className="desktop-only" />
                             <div style={{ display: 'flex', flexDirection: 'column' }}>
                                 <span>{t('additionalNotes') || 'Additional Notes'}</span>
                                 <span className="mobile-only" style={{ fontSize: '0.75rem', fontWeight: 'normal', color: 'var(--color-text-muted)' }}>บันทึกเพิ่มเติม</span>
@@ -613,7 +623,7 @@ export default function EditComputer({ params }) {
                     {repairHistory.length > 0 && (
                         <>
                             <h4 style={{ margin: '0 0 0.75rem', color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>จาก Ticket ({repairHistory.length})</h4>
-                            
+
                             {/* Desktop Table */}
                             <div className="desktop-only" style={{ overflowX: 'auto', marginBottom: '1.5rem' }}>
                                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
@@ -693,7 +703,7 @@ export default function EditComputer({ params }) {
                     {manualLogs.length > 0 && (
                         <>
                             <h4 style={{ margin: '0 0 0.75rem', color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>บันทึกโดย IT ({manualLogs.length})</h4>
-                            
+
                             {/* Desktop Table */}
                             <div className="desktop-only" style={{ overflowX: 'auto', marginBottom: '1rem' }}>
                                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
