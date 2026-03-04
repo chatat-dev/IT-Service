@@ -204,7 +204,9 @@ io.on('connection', (socket) => {
 
             io.to(`ticket_${data.ticket_id}`).emit('receive_message', rows[0]);
 
-            // Notify globally so sidebar badges can refresh
+            // Notify globally so sidebar badges and toast notifications can trigger
+            // for users not actively in the ticket room
+            io.emit('receive_message_global', rows[0]);
             io.emit('refresh_chats');
         } catch (err) {
             console.error('Socket send_message error:', err);

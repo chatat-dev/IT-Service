@@ -78,33 +78,41 @@ export function Navbar() {
         if (section === 'it') {
             socketRef.current.on('refresh_users', fetchItCounts);
             socketRef.current.on('refresh_tickets', fetchItCounts);
-            socketRef.current.on('receive_message', (msgData) => {
-                setCounts(prev => ({ ...prev, unreadItChats: prev.unreadItChats + 1 }));
-                // Show toast if not on IT chat page
-                if (!window.location.pathname.startsWith('/it/chat') && window.__showChatToast) {
-                    const senderName = msgData?.sender_name || msgData?.user_name || 'User';
-                    const preview = msgData?.message ? (msgData.message.length > 50 ? msgData.message.substring(0, 50) + '...' : msgData.message) : 'New message';
-                    window.__showChatToast({
-                        title: `💬 ${senderName}`,
-                        message: preview,
-                        link: '/it/chat'
-                    });
+            socketRef.current.on('receive_message_global', (msgData) => {
+                // If it's a message from someone else, increment IT unread badge
+                if (msgData?.sender_id !== user.id) {
+                    setCounts(prev => ({ ...prev, unreadItChats: prev.unreadItChats + 1 }));
+                    fetchItCounts(); // Refresh exact badge count
+
+                    // Show toast if not on IT chat page
+                    if (!window.location.pathname.startsWith('/it/chat') && window.__showChatToast) {
+                        const senderName = msgData?.sender_name || msgData?.user_name || 'User';
+                        const preview = msgData?.message ? (msgData.message.length > 50 ? msgData.message.substring(0, 50) + '...' : msgData.message) : 'New message';
+                        window.__showChatToast({
+                            title: `💬 ${senderName}`,
+                            message: preview,
+                            link: '/it/chat'
+                        });
+                    }
                 }
             });
         }
         if (section === 'user') {
             socketRef.current.on('refresh_chats', fetchUserChatCount);
-            socketRef.current.on('receive_message', (msgData) => {
-                fetchUserChatCount();
-                // Show toast if not on User chat page
-                if (!window.location.pathname.startsWith('/user/chat') && window.__showChatToast) {
-                    const senderName = msgData?.sender_name || msgData?.user_name || 'IT Support';
-                    const preview = msgData?.message ? (msgData.message.length > 50 ? msgData.message.substring(0, 50) + '...' : msgData.message) : 'New message';
-                    window.__showChatToast({
-                        title: `💬 ${senderName}`,
-                        message: preview,
-                        link: '/user/chat'
-                    });
+            socketRef.current.on('receive_message_global', (msgData) => {
+                // Only alert user if their own ticket got a message from IT
+                if (msgData?.sender_id !== user.id) {
+                    fetchUserChatCount();
+                    // Show toast if not on User chat page
+                    if (!window.location.pathname.startsWith('/user/chat') && window.__showChatToast) {
+                        const senderName = msgData?.sender_name || msgData?.user_name || 'IT Support';
+                        const preview = msgData?.message ? (msgData.message.length > 50 ? msgData.message.substring(0, 50) + '...' : msgData.message) : 'New message';
+                        window.__showChatToast({
+                            title: `💬 ${senderName}`,
+                            message: preview,
+                            link: '/user/chat'
+                        });
+                    }
                 }
             });
         }
