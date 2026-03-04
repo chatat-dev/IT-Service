@@ -72,7 +72,7 @@ const exportTickets = async (req, res) => {
     const { from, to, format } = req.query;
     try {
         let query = `
-            SELECT t.ticket_no, t.status, t.description, t.ip_address, t.solution, t.phone,
+            SELECT t.ticket_no, t.status, t.description, t.ip_address, t.solution,
                 t.created_at, t.closed_at, t.guest_name, t.guest_phone,
                 l.name as location_name, c.name as category_name,
                 cp.name as company_name, s.name as site_name, d.name as dept_name,
@@ -138,7 +138,7 @@ const exportTickets = async (req, res) => {
                 status: r.status,
                 requester_name: r.requester_name || '',
                 guest_name: r.guest_name || '',
-                phone: r.guest_phone || r.phone || r.user_phone || '',
+                phone: r.guest_phone || r.user_phone || '',
                 location_name: r.location_name || '',
                 company_name: r.company_name || '',
                 site_name: r.site_name || '',
@@ -164,6 +164,7 @@ const exportTickets = async (req, res) => {
 
         res.json(rows);
     } catch (err) {
+        console.error('Export Error:', err);
         res.status(500).json({ message: 'Error exporting tickets', error: err.message });
     }
 };
