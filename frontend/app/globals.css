@@ -881,7 +881,11 @@ input:checked+.slider:before {
 
   /* ========== ADMIN RESPONSIVE: Form stacking ========== */
   .glass-card form[style*="grid-template-columns"],
-  .glass-card form[style*="gridTemplateColumns"] {
+  .glass-card form[style*="gridTemplateColumns"],
+  .glass-card form div[style*="grid-template-columns"],
+  .glass-card form div[style*="gridTemplateColumns"],
+  .glass-card div[style*="grid-template-columns"],
+  .glass-card div[style*="gridTemplateColumns"] {
     grid-template-columns: 1fr !important;
   }
 
