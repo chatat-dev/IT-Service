@@ -101,7 +101,7 @@ export function Navbar() {
             socketRef.current.on('refresh_chats', fetchUserChatCount);
             socketRef.current.on('receive_message_global', (msgData) => {
                 // Only alert user if their own ticket got a message from IT
-                if (msgData?.sender_id !== user.id) {
+                if (msgData?.sender_id !== user.id && msgData?.ticket_owner_id === user.id) {
                     fetchUserChatCount();
                     // Show toast if not on User chat page
                     if (!window.location.pathname.startsWith('/user/chat') && window.__showChatToast) {

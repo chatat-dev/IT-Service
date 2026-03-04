@@ -199,14 +199,20 @@ io.on('connection', (socket) => {
 
             const insertId = result.insertId;
             const [rows] = await pool.query(
-                `SELECT c.*, u.name as sender_name FROM chats c LEFT JOIN users u ON c.sender_id = u.id WHERE c.id = ?`, [insertId]
+                `SELECT c.*, u.name as sender_name, t.user_id as ticket_owner_id 
+                 FROM chats c 
+                 LEFT JOIN users u ON c.sender_id = u.id 
+                 LEFT JOIN tickets t ON c.ticket_id = t.id 
+                 WHERE c.id = ?`, [insertId]
             );
 
-            io.to(`ticket_${data.ticket_id}`).emit('receive_message', rows[0]);
+            const msgPayload = rows[0];
+
+            io.to(`ticket_${data.ticket_id}`).emit('receive_message', msgPayload);
 
             // Notify globally so sidebar badges and toast notifications can trigger
             // for users not actively in the ticket room
-            io.emit('receive_message_global', rows[0]);
+            io.emit('receive_message_global', msgPayload);
             io.emit('refresh_chats');
         } catch (err) {
             console.error('Socket send_message error:', err);
