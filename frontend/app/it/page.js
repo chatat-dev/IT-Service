@@ -34,9 +34,18 @@ export default function ITDashboard() {
                 socket.on('receive_message', () => {
                     fetchCounts(user.token);
                 });
+                socket.on('receive_message_global', () => {
+                    fetchCounts(user.token);
+                });
+
+                const handleChatRead = () => fetchCounts(user.token);
+                window.addEventListener('chat_read', handleChatRead);
 
                 // cleanup
-                return () => socket.disconnect();
+                return () => {
+                    socket.disconnect();
+                    window.removeEventListener('chat_read', handleChatRead);
+                };
             });
         }
     }, []);

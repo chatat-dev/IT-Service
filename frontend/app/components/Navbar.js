@@ -80,7 +80,7 @@ export function Navbar() {
             socketRef.current.on('refresh_tickets', fetchItCounts);
             socketRef.current.on('receive_message_global', (msgData) => {
                 // If it's a message from someone else, refresh IT unread badge (server filters by assigned/participant)
-                if (msgData?.sender_id !== user.id) {
+                if (String(msgData?.sender_id) !== String(user.id)) {
                     fetchItCounts();
 
                     // Show toast if not on IT chat page
@@ -100,7 +100,7 @@ export function Navbar() {
             socketRef.current.on('refresh_chats', fetchUserChatCount);
             socketRef.current.on('receive_message_global', (msgData) => {
                 // Only alert user if their own ticket got a message from IT
-                if (msgData?.sender_id !== user.id && msgData?.ticket_owner_id === user.id) {
+                if (String(msgData?.sender_id) !== String(user.id) && String(msgData?.ticket_owner_id) === String(user.id)) {
                     fetchUserChatCount();
                     // Show toast if not on User chat page
                     if (!window.location.pathname.startsWith('/user/chat') && window.__showChatToast) {
@@ -118,8 +118,8 @@ export function Navbar() {
 
         const handleRefreshUsers = () => { if (section === 'it') fetchItCounts(); };
         const handleRefreshTickets = () => { if (section === 'it') fetchItCounts(); };
-        const handleChatOpened = () => setCounts(prev => ({ ...prev, unreadItChats: 0 }));
-        const handleChatRead = () => { if (section === 'user') fetchUserChatCount(); };
+        const handleChatOpened = () => { if (section === 'user') fetchUserChatCount(); else if (section === 'it') fetchItCounts(); };
+        const handleChatRead = () => { if (section === 'user') fetchUserChatCount(); else if (section === 'it') fetchItCounts(); };
 
         window.addEventListener('refresh_users', handleRefreshUsers);
         window.addEventListener('refresh_tickets', handleRefreshTickets);

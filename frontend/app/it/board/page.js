@@ -16,6 +16,7 @@ export default function ITRequestBoard() {
     // Filters
     const [searchText, setSearchText] = useState('');
     const [filterLocation, setFilterLocation] = useState('');
+    const [filterItStaff, setFilterItStaff] = useState('');
     const [locations, setLocations] = useState([]);
 
     // Modals
@@ -83,8 +84,7 @@ export default function ITRequestBoard() {
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://192.168.0.112:5250'}/api/tickets/it-staff/list`, { headers: { 'Authorization': `Bearer ${t}` } });
             const users = await res.json();
             if (Array.isArray(users)) {
-                const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-                setItUsers(users.filter(u => u.id !== currentUser.id));
+                setItUsers(users);
             }
         } catch (err) { console.error(err); }
     };
@@ -245,7 +245,8 @@ export default function ITRequestBoard() {
             rName.toLowerCase().includes(searchText.toLowerCase()) ||
             t.description?.toLowerCase().includes(searchText.toLowerCase());
         const matchLocation = !filterLocation || t.location_name === filterLocation;
-        return matchSearch && matchLocation;
+        const matchItStaff = !filterItStaff || String(t.assigned_to) === String(filterItStaff) || (filterItStaff === 'unassigned' && !t.assigned_to);
+        return matchSearch && matchLocation && matchItStaff;
     });
 
     return (
@@ -254,7 +255,7 @@ export default function ITRequestBoard() {
 
             {/* Search & Filter Bar */}
             <div className="glass-card" style={{ marginBottom: '1.5rem' }}>
-                <div className="filter-bar" style={{ display: 'flex', gap: '0.75rem', alignItems: 'stretch', flexDirection: 'column' }}>
+                <div className="filter-bar" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem', alignItems: 'center' }}>
                     <div className="form-group" style={{ marginBottom: 0 }}>
                         <input type="text" className="input" style={{ width: '100%' }} placeholder="🔍 Search ticket no, name, description..." value={searchText} onChange={e => setSearchText(e.target.value)} />
                     </div>
@@ -264,6 +265,17 @@ export default function ITRequestBoard() {
                             value={filterLocation}
                             onChange={(val) => setFilterLocation(val || '')}
                             placeholder="All Locations"
+                        />
+                    </div>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                        <StyledSelect
+                            options={[
+                                { value: 'unassigned', label: 'Unassigned' },
+                                ...itUsers.map(u => ({ value: u.id, label: `${u.name} ${u.lname}` }))
+                            ]}
+                            value={filterItStaff}
+                            onChange={(val) => setFilterItStaff(val || '')}
+                            placeholder="All IT Staff"
                         />
                     </div>
                 </div>

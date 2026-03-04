@@ -101,6 +101,11 @@ export default function ITChat() {
             socketRef.current.on('receive_message', (msg) => {
                 if (msg.ticket_id == selectedTicketIdRef.current) {
                     setMessages(prev => [...prev, msg]);
+                    // Mark as read
+                    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://192.168.0.112:5250'}/api/chat/${msg.ticket_id}/read`, {
+                        method: 'PUT',
+                        headers: { 'Authorization': `Bearer ${user.token}` }
+                    }).catch(console.error);
                 } else {
                     // Mark as unread
                     setUnreadMap(prev => ({ ...prev, [msg.ticket_id]: (prev[msg.ticket_id] || 0) + 1 }));
@@ -141,6 +146,15 @@ export default function ITChat() {
         if (selectedTicketId && socketRef.current && token) {
             socketRef.current.emit('join_ticket', selectedTicketId);
             fetchChatHistory(selectedTicketId);
+
+            // Mark as read for this ticket
+            fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://192.168.0.112:5250'}/api/chat/${selectedTicketId}/read`, {
+                method: 'PUT',
+                headers: { 'Authorization': `Bearer ${token}` }
+            }).then(() => {
+                window.dispatchEvent(new Event('chat_read'));
+            }).catch(console.error);
+
             // Clear unread for this ticket
             setUnreadMap(prev => { const n = { ...prev }; delete n[selectedTicketId]; return n; });
         }

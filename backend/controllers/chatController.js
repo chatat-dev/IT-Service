@@ -148,7 +148,10 @@ const getItUnreadChatCount = async (req, res) => {
             JOIN tickets t ON c.ticket_id = t.id
             WHERE t.status != 'closed'
             AND t.guest_name IS NULL
-            AND (t.assigned_to = ? OR FIND_IN_SET(?, t.participant_ids) > 0)
+            AND (
+                t.assigned_to = ?
+                OR EXISTS (SELECT 1 FROM ticket_participants tp WHERE tp.ticket_id = t.id AND tp.user_id = ?)
+            )
             AND c.sender_id != ?
             AND (
                 c.created_at > COALESCE(

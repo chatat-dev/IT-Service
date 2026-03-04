@@ -33,7 +33,7 @@ export default function UserTrack() {
 
             socketRef.current.on('refresh_chats', () => { fetchUnreadTickets(u.token); });
             socketRef.current.on('receive_message_global', (msgData) => {
-                if (msgData?.sender_id !== u.id && msgData?.ticket_owner_id === u.id) {
+                if (String(msgData?.sender_id) !== String(u.id) && String(msgData?.ticket_owner_id) === String(u.id)) {
                     fetchUnreadTickets(u.token);
                 }
             });
