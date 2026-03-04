@@ -291,18 +291,20 @@ export default function UserChat() {
                                 >
                                     <strong>{tk.ticket_no}</strong>
                                     {hasUnread && <span style={{ position: 'absolute', top: '12px', right: '12px', width: '10px', height: '10px', backgroundColor: '#ef4444', borderRadius: '50%', boxShadow: '0 0 0 2px var(--color-bg-base)' }}></span>}
-                                    <div style={{ fontSize: '0.8rem', color: tk.status === 'closed' ? 'var(--color-error)' : 'var(--color-text-muted)', marginTop: '0.25rem', fontStyle: tk.status === 'closed' ? 'italic' : 'normal' }}>
-                                        {tk.status === 'closed' ? t('closed') : tk.status}
-                                    </div>
-                                    {tk.status === 'closed' && (
-                                        <div style={{ fontSize: '0.72rem', marginTop: '0.3rem' }}>
-                                            {tk.keep_chat_history ? (
-                                                <span style={{ color: '#10b981' }}>💾 แชทถูกเก็บไว้</span>
-                                            ) : (tk.closed_at || tk.updated_at) ? (
-                                                <span style={{ color: '#ef4444' }}>⚠️ ลบ {new Date(new Date(tk.closed_at || tk.updated_at).getTime() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('th-TH')}</span>
-                                            ) : null}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.25rem' }}>
+                                        <div style={{ fontSize: '0.8rem', color: tk.status === 'closed' ? 'var(--color-error)' : 'var(--color-text-muted)', fontStyle: tk.status === 'closed' ? 'italic' : 'normal' }}>
+                                            {tk.status === 'closed' ? t('closed') : tk.status}
                                         </div>
-                                    )}
+                                        {tk.status === 'closed' && (
+                                            <div style={{ fontSize: '0.72rem' }}>
+                                                {tk.keep_chat_history ? (
+                                                    <span style={{ color: '#10b981' }}>| 💾 เก็บแชท</span>
+                                                ) : (tk.closed_at || tk.updated_at) ? (
+                                                    <span style={{ color: '#ef4444' }}>| ⚠️ ลบ {new Date(new Date(tk.closed_at || tk.updated_at).getTime() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('th-TH')}</span>
+                                                ) : null}
+                                            </div>
+                                        )}
+                                    </div>
                                 </li>
                             );
                         })}
