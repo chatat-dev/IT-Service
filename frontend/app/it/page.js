@@ -32,7 +32,7 @@ export default function ITDashboard() {
                 socket.on('refresh_tickets', () => fetchCounts(user.token));
                 socket.on('refresh_users', () => fetchCounts(user.token)); // For realtime user approval changes
                 socket.on('receive_message', () => {
-                    setCounts(prev => ({ ...prev, unreadChats: prev.unreadChats + 1 }));
+                    fetchCounts(user.token);
                 });
 
                 // cleanup
@@ -267,7 +267,7 @@ export default function ITDashboard() {
                         <label className="label">{t('toDate')}</label>
                         <input type="date" className="input" value={toDate} onChange={e => setToDate(e.target.value)} />
                     </div>
-                    <button className="btn btn-primary" onClick={exportExcel} style={{ padding: '0.6rem 1.5rem' }}>
+                    <button className="btn btn-primary" onClick={exportExcel} style={{ height: '46px', padding: '0 1.5rem' }}>
                         Export .xlsx
                     </button>
                 </div>

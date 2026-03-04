@@ -79,10 +79,9 @@ export function Navbar() {
             socketRef.current.on('refresh_users', fetchItCounts);
             socketRef.current.on('refresh_tickets', fetchItCounts);
             socketRef.current.on('receive_message_global', (msgData) => {
-                // If it's a message from someone else, increment IT unread badge
+                // If it's a message from someone else, refresh IT unread badge (server filters by assigned/participant)
                 if (msgData?.sender_id !== user.id) {
-                    setCounts(prev => ({ ...prev, unreadItChats: prev.unreadItChats + 1 }));
-                    fetchItCounts(); // Refresh exact badge count
+                    fetchItCounts();
 
                     // Show toast if not on IT chat page
                     if (!window.location.pathname.startsWith('/it/chat') && window.__showChatToast) {
@@ -91,7 +90,7 @@ export function Navbar() {
                         window.__showChatToast({
                             title: `💬 ${senderName}`,
                             message: preview,
-                            link: '/it/chat'
+                            link: msgData?.ticket_id ? `/it/chat?ticketId=${msgData.ticket_id}` : '/it/chat'
                         });
                     }
                 }
@@ -110,7 +109,7 @@ export function Navbar() {
                         window.__showChatToast({
                             title: `💬 ${senderName}`,
                             message: preview,
-                            link: '/user/chat'
+                            link: msgData?.ticket_id ? `/user/chat?ticket=${msgData.ticket_id}` : '/user/chat'
                         });
                     }
                 }

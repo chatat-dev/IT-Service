@@ -316,6 +316,15 @@ const translations = {
         problemCategory: 'Problem Category',
         assignedIt: 'Assigned IT',
         solutionNote: 'Solution Note',
+        fileRetentionNote: 'Files will be kept for 7 days before being automatically deleted.',
+        maxFileSizeNote: 'Max file size:',
+        allowedExtNote: 'Allowed:',
+        uploadFailed: 'File upload failed',
+        attachFiles: 'Attach Files',
+        attached: 'Attachments',
+        dragOrClick: 'Drag files here, or click to browse',
+        dropHere: 'Drop files here!',
+        addMoreFiles: 'Add more files',
     },
     th: {
         login: 'เข้าสู่ระบบ',
@@ -647,6 +656,15 @@ const translations = {
         recipientsPlaceholder: 'example@domain.com, admin2@domain.com',
         recipientsHelpText: 'คั่นอีเมลหลายอีเมลด้วยเครื่องหมายจุลภาค (,)',
         saveSettings: 'บันทึกการตั้งค่า',
+        fileRetentionNote: 'ไฟล์จะถูกเก็บไว้เป็นเวลา 7 วันก่อนจะถูกลบอัตโนมัติ',
+        maxFileSizeNote: 'ขนาดไฟล์สูงสุด:',
+        allowedExtNote: 'ไฟล์ที่รองรับ:',
+        uploadFailed: 'อัปโหลดไฟล์ไม่สำเร็จ',
+        attachFiles: 'แนบไฟล์',
+        attached: 'ไฟล์แนบ',
+        dragOrClick: 'ลากไฟล์มาวางที่นี่ หรือคลิกเพื่อเลือก',
+        dropHere: 'วางไฟล์ที่นี่!',
+        addMoreFiles: 'เพิ่มไฟล์',
     }
 };
 

@@ -141,12 +141,14 @@ const unsendChatMessage = async (req, res) => {
 const getItUnreadChatCount = async (req, res) => {
     const userId = req.user.id;
     try {
-        // Count tickets where IT staff has unread messages from users
+        // Count tickets where THIS IT staff has unread messages (only their assigned/participant tickets, no guest tickets)
         const [rows] = await pool.query(`
             SELECT COUNT(DISTINCT c.ticket_id) as unread_count
             FROM chats c
             JOIN tickets t ON c.ticket_id = t.id
             WHERE t.status != 'closed'
+            AND t.guest_name IS NULL
+            AND (t.assigned_to = ? OR FIND_IN_SET(?, t.participant_ids) > 0)
             AND c.sender_id != ?
             AND (
                 c.created_at > COALESCE(
@@ -154,7 +156,7 @@ const getItUnreadChatCount = async (req, res) => {
                     '1970-01-01'
                 )
             )
-        `, [userId, userId]);
+        `, [userId, userId, userId, userId]);
         res.json({ unreadCount: rows[0].unread_count });
     } catch (err) {
         res.status(500).json({ message: 'Error fetching IT unread count', error: err.message });

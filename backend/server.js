@@ -107,6 +107,16 @@ app.use(express.json());
             }
         }
 
+        // Add attachment_urls column to tickets if it doesn't exist
+        try {
+            await pool.query(`ALTER TABLE tickets ADD COLUMN attachment_urls JSON DEFAULT NULL`);
+            console.log('✅ Added attachment_urls column to tickets table');
+        } catch (alterErr) {
+            if (alterErr.code !== 'ER_DUP_FIELDNAME') {
+                console.warn('⚠️ Could not add attachment_urls column:', alterErr.message);
+            }
+        }
+
         await pool.query(`CREATE TABLE IF NOT EXISTS chat_reads (
             ticket_id INT NOT NULL,
             user_id INT NOT NULL,
@@ -240,6 +250,9 @@ Object.keys(networkInterfaces).forEach((interfaceName) => {
 
 const initAutoReportCron = require('./jobs/autoReportJob');
 initAutoReportCron();
+
+const initCleanupJob = require('./jobs/cleanupJob');
+initCleanupJob();
 
 const PORT = process.env.PORT || 5250;
 server.listen(PORT, '0.0.0.0', () => {

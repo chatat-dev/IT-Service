@@ -4,6 +4,7 @@ import './globals.css';
 import { useLanguage } from './components/LanguageProvider';
 import StyledSelect from './components/StyledSelect';
 import RepairSuccess from './components/RepairSuccess';
+import FileDropZone from './components/FileDropZone';
 
 export default function GuestPage() {
   const { t } = useLanguage();
@@ -32,6 +33,7 @@ export default function GuestPage() {
   const [searchWord, setSearchWord] = useState('');
   const [trackedTickets, setTrackedTickets] = useState([]);
   const [selectedTrack, setSelectedTrack] = useState(null);
+  const [selectedFiles, setSelectedFiles] = useState([]);
 
   useEffect(() => {
     fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://192.168.0.112:5250'}/api/public/data`)
@@ -54,15 +56,36 @@ export default function GuestPage() {
     e.preventDefault();
     setMessage(null);
     try {
+      let attachmentUrls = [];
+      if (selectedFiles.length > 0) {
+        const uploadData = new FormData();
+        selectedFiles.forEach(f => uploadData.append('files', f));
+
+        const uploadRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://192.168.0.112:5250'}/api/tickets/upload`, {
+          method: 'POST',
+          body: uploadData
+        });
+
+        const uploadResult = await uploadRes.json();
+        if (!uploadRes.ok) {
+          setMessage({ type: 'error', text: uploadResult.message || t('uploadFailed') });
+          return;
+        }
+        attachmentUrls = uploadResult.files;
+      }
+
+      const payload = { ...formData, attachment_urls: attachmentUrls };
+
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://192.168.0.112:5250'}/api/tickets/guest`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       });
       const data = await res.json();
       if (res.ok) {
         setMessage({ type: 'success', text: `${t('ticketSuccess')} ${data.ticket_no}` });
         setFormData({ location_id: '', company_id: '', site_id: '', department_id: '', category_id: '', guest_name: '', guest_phone: '', description: '' });
+        setSelectedFiles([]);
       } else {
         setMessage({ type: 'error', text: data.message || t('failedSubmit') });
       }
@@ -126,6 +149,7 @@ export default function GuestPage() {
                 onReset={() => {
                   setMessage(null);
                   setFormData({ location_id: '', company_id: '', site_id: '', department_id: '', category_id: '', guest_name: '', guest_phone: '', description: '' });
+                  setSelectedFiles([]);
                 }}
               />
             ) : (
@@ -194,6 +218,14 @@ export default function GuestPage() {
                     <label className="label">{t('issueDetailsLabel')}</label>
                     <textarea name="description" className="textarea" required value={formData.description || ''} onChange={handleInputChange} placeholder={t('issuePlaceholder')}></textarea>
                   </div>
+
+                  <FileDropZone
+                    files={selectedFiles}
+                    onChange={setSelectedFiles}
+                    maxSizeMB={publicData.attachmentSettings?.max_file_size_mb}
+                    allowedExtensions={publicData.attachmentSettings?.allowed_extensions}
+                    isActive={publicData.attachmentSettings?.is_active}
+                  />
 
                   <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
                     <button type="button" className="btn btn-outline" onClick={() => setFormData({ location_id: '', company_id: '', site_id: '', department_id: '', category_id: '', guest_name: '', guest_phone: '', description: '' })}>{t('resetBtn')}</button>
@@ -317,6 +349,27 @@ export default function GuestPage() {
                       {selectedTrack.description || '-'}
                     </div>
                   </div>
+
+                  {/* Attachments */}
+                  {selectedTrack.attachment_urls && (() => {
+                    try {
+                      const parsed = typeof selectedTrack.attachment_urls === 'string' ? JSON.parse(selectedTrack.attachment_urls) : selectedTrack.attachment_urls;
+                      return parsed.length > 0 ? (
+                        <div style={{ marginBottom: '1.5rem' }}>
+                          <div style={{ fontSize: '0.8rem', color: '#9ca3af', fontWeight: '600', marginBottom: '0.4rem' }}>📎 {t('attached')}</div>
+                          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                            {parsed.map((f, i) => (
+                              <a key={i} href={`${process.env.NEXT_PUBLIC_API_URL || 'http://192.168.0.112:5250'}${f.url}`} target="_blank" rel="noreferrer"
+                                style={{ padding: '0.4rem 0.8rem', background: '#e0e7ff', color: '#4338ca', borderRadius: '4px', fontSize: '0.8rem', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+                                {f.name}
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null;
+                    } catch (err) { return null; }
+                  })()}
 
                   {/* Solution (if closed) */}
                   {selectedTrack.solution && (

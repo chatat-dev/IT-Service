@@ -11,10 +11,12 @@ const getPublicData = async (req, res) => {
         const [operatingSystems] = await pool.query('SELECT id, name FROM operating_systems WHERE status = 1');
         const [msOffices] = await pool.query('SELECT id, name FROM ms_offices WHERE status = 1');
         const [scriptInstallStatuses] = await pool.query('SELECT id, name FROM script_install_statuses WHERE status = 1');
+        const [attachmentSettings] = await pool.query('SELECT * FROM attachment_settings LIMIT 1');
 
         res.json({
             locations, companies, sites, departments, categories,
-            deviceTypes, operatingSystems, msOffices, scriptInstallStatuses
+            deviceTypes, operatingSystems, msOffices, scriptInstallStatuses,
+            attachmentSettings: attachmentSettings[0] || { max_file_size_mb: 5, allowed_extensions: '.jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.xls,.xlsx', is_active: 1 }
         });
     } catch (err) {
         res.status(500).json({ message: 'Error fetching public data', error: err.message });

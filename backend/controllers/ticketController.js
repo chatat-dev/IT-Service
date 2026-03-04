@@ -11,14 +11,14 @@ const generateTicketNo = () => {
 
 // --- GUEST ---
 const createGuestTicket = async (req, res) => {
-    const { guest_name, guest_phone, location_id, company_id, site_id, department_id, description, category_id } = req.body;
+    const { guest_name, guest_phone, location_id, company_id, site_id, department_id, description, category_id, attachment_urls } = req.body;
     const ip_address = req.ip || req.connection.remoteAddress;
 
     try {
         const ticket_no = generateTicketNo();
         await pool.query(
-            'INSERT INTO tickets (ticket_no, guest_name, guest_phone, location_id, company_id, site_id, department_id, description, category_id, ip_address, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [ticket_no, guest_name, guest_phone, location_id, company_id, site_id, department_id, description, category_id || null, ip_address, 'open']
+            'INSERT INTO tickets (ticket_no, guest_name, guest_phone, location_id, company_id, site_id, department_id, description, category_id, ip_address, status, attachment_urls) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [ticket_no, guest_name, guest_phone, location_id, company_id, site_id, department_id, description, category_id || null, ip_address, 'open', attachment_urls ? JSON.stringify(attachment_urls) : null]
         );
         res.status(201).json({ message: 'Ticket created', ticket_no });
 
@@ -50,7 +50,7 @@ const trackGuestTicket = async (req, res) => {
 
 // --- GENERAL USER ---
 const createUserTicket = async (req, res) => {
-    const { description, category_id } = req.body;
+    const { description, category_id, attachment_urls } = req.body;
     const ip_address = req.ip || req.connection.remoteAddress;
     const user = req.user;
 
@@ -73,8 +73,8 @@ const createUserTicket = async (req, res) => {
         }
 
         await pool.query(
-            'INSERT INTO tickets (ticket_no, user_id, computer_id, location_id, company_id, site_id, department_id, description, category_id, ip_address, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [ticket_no, u.id, autoComputerId, u.location_id, u.company_id, u.site_id, u.department_id, description, category_id || null, ip_address, 'open']
+            'INSERT INTO tickets (ticket_no, user_id, computer_id, location_id, company_id, site_id, department_id, description, category_id, ip_address, status, attachment_urls) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [ticket_no, u.id, autoComputerId, u.location_id, u.company_id, u.site_id, u.department_id, description, category_id || null, ip_address, 'open', attachment_urls ? JSON.stringify(attachment_urls) : null]
         );
         res.status(201).json({ message: 'Ticket created', ticket_no });
 
@@ -192,12 +192,12 @@ const transferTicket = async (req, res) => {
     try {
         await pool.query('UPDATE tickets SET assigned_to = ? WHERE id = ?', [new_assignee_id, id]);
         await pool.query('INSERT INTO ticket_logs (ticket_id, user_id, action) VALUES (?, ?, ?)', [id, req.user.id, `Transferred to user_id ${new_assignee_id} `]);
-        
+
         const io = req.app.get('io');
         if (io) {
             io.emit('refresh_tickets');
         }
-        
+
         res.json({ message: 'Ticket transferred' });
     } catch (err) {
         res.status(500).json({ message: 'Error transferring ticket', error: err.message });

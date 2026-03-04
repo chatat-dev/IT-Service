@@ -115,16 +115,18 @@ export default function UserTrack() {
                                         </span>
                                     </td>
                                     <td>{tk.assigned_name || t('pendingAssignment')}</td>
-                                    <td style={{ display: 'flex', gap: '0.4rem' }}>
-                                        <button className="btn btn-outline" style={{ padding: '0.2rem 0.5rem' }}
-                                            onClick={() => setSelectedTicket(tk)}>
-                                            {t('detail')}
-                                        </button>
-                                        <a href={`/user/chat?ticket=${tk.id}`} className="btn btn-outline" style={{ position: 'relative', padding: '0.2rem 0.5rem', color: 'var(--color-primary)', borderColor: 'var(--color-primary)' }}>
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '4px', verticalAlign: 'text-bottom' }}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                                            Chat
-                                            {hasUnread && <span style={{ position: 'absolute', top: '-4px', right: '-4px', width: '10px', height: '10px', backgroundColor: '#ef4444', borderRadius: '50%', boxShadow: '0 0 0 2px var(--color-bg-base)' }}></span>}
-                                        </a>
+                                    <td>
+                                        <div style={{ display: 'flex', gap: '0.4rem', whiteSpace: 'nowrap' }}>
+                                            <button className="btn btn-outline" style={{ padding: '0.2rem 0.5rem' }}
+                                                onClick={() => setSelectedTicket(tk)}>
+                                                {t('detail')}
+                                            </button>
+                                            <a href={`/user/chat?ticket=${tk.id}`} className="btn btn-outline" style={{ position: 'relative', padding: '0.2rem 0.5rem', color: 'var(--color-primary)', borderColor: 'var(--color-primary)' }}>
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '4px', verticalAlign: 'text-bottom' }}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                                                Chat
+                                                {hasUnread && <span style={{ position: 'absolute', top: '-4px', right: '-4px', width: '10px', height: '10px', backgroundColor: '#ef4444', borderRadius: '50%', boxShadow: '0 0 0 2px var(--color-bg-base)' }}></span>}
+                                            </a>
+                                        </div>
                                     </td>
                                 </tr>
                             )
@@ -282,6 +284,27 @@ export default function UserTrack() {
                                 {selectedTicket.description}
                             </p>
                         </div>
+
+                        {/* Attachments */}
+                        {selectedTicket.attachment_urls && (() => {
+                            try {
+                                const parsed = typeof selectedTicket.attachment_urls === 'string' ? JSON.parse(selectedTicket.attachment_urls) : selectedTicket.attachment_urls;
+                                return parsed.length > 0 ? (
+                                    <div style={{ marginBottom: '0.75rem' }}>
+                                        <label className="label" style={{ fontWeight: '600', fontSize: '0.85rem' }}>📎 {t('attached')}</label>
+                                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.4rem' }}>
+                                            {parsed.map((f, i) => (
+                                                <a key={i} href={`${process.env.NEXT_PUBLIC_API_URL || 'http://192.168.0.112:5250'}${f.url}`} target="_blank" rel="noreferrer"
+                                                    style={{ padding: '0.4rem 0.8rem', background: '#e0e7ff', color: '#4338ca', borderRadius: '4px', fontSize: '0.8rem', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+                                                    {f.name}
+                                                </a>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ) : null;
+                            } catch (err) { return null; }
+                        })()}
 
                         {selectedTicket.solution && (
                             <div style={{ marginBottom: '0.75rem' }}>
