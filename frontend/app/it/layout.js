@@ -7,7 +7,8 @@ export default function ITLayout({ children }) {
     useEffect(() => {
         const user = JSON.parse(localStorage.getItem('user') || '{}');
         if (user?.role !== 'it' && user?.role !== 'super_user') {
-            window.location.href = '/login';
+            const currentPath = window.location.pathname;
+            window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}`;
         } else {
             setAuthorized(true);
         }
