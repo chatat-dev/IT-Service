@@ -77,19 +77,20 @@ export default function ComputersList() {
 
     return (
         <div style={{ maxWidth: '1200px', margin: '0 auto', paddingBottom: '3rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                <div>
-                    <h1 style={{ fontSize: '2.5rem', fontWeight: '800', margin: 0, color: 'var(--color-text-main)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
+                <div style={{ minWidth: 0 }}>
+                    <h1 style={{ fontSize: 'clamp(1.4rem, 5vw, 2.5rem)', fontWeight: '800', margin: 0, color: 'var(--color-text-main)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                         <FiMonitor color="var(--color-primary)" /> {t('listComputer') || 'Inventory'}
                     </h1>
-                    <p style={{ color: 'var(--color-text-muted)', margin: '0.5rem 0 0', fontSize: '1.1rem' }}>
+                    <p style={{ color: 'var(--color-text-muted)', margin: '0.5rem 0 0', fontSize: '0.95rem' }}>
                         {t('manageTrackAssets') || 'Manage and track hardware assets.'}
                     </p>
                 </div>
                 <Link href="/it/computers/add" style={{
-                    display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.5rem',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.75rem 1.5rem',
                     borderRadius: '0.75rem', background: 'var(--color-primary)', color: 'white',
-                    fontWeight: '600', textDecoration: 'none', boxShadow: '0 4px 12px rgba(79,70,229,0.25)', transition: 'transform 0.2s'
+                    fontWeight: '600', textDecoration: 'none', boxShadow: '0 4px 12px rgba(79,70,229,0.25)', transition: 'transform 0.2s',
+                    whiteSpace: 'nowrap', flex: '0 0 auto'
                 }}>
                     <FiPlus /> {t('addComputer') || 'Add Computer'}
                 </Link>
