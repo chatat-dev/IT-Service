@@ -95,14 +95,15 @@ export function NewsModal() {
             animation: 'fadeIn 0.3s ease-out'
         }}>
             <div style={{
-                width: '100%', maxWidth: '600px',
-                background: 'var(--color-bg-card)', // Opaque background
-                borderRadius: '16px', // Solid edges
-                display: 'flex', flexDirection: 'column', gap: '1.5rem',
+                width: '100%', maxWidth: '600px', maxHeight: '85vh',
+                background: 'var(--color-bg-card)',
+                borderRadius: '16px',
+                display: 'flex', flexDirection: 'column',
                 transform: 'scale(1)', animation: 'scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
                 border: '1px solid rgba(0,0,0,0.1)',
                 boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-                padding: '2rem'
+                padding: '1.5rem',
+                overflow: 'hidden'
             }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid rgba(0,0,0,0.1)', paddingBottom: '1rem' }}>
                     <h3 style={{ margin: 0, color: 'var(--color-primary)', display: 'flex', alignItems: 'flex-start', gap: '0.75rem', fontSize: '1.4rem', lineHeight: '1.4' }}>
@@ -115,7 +116,7 @@ export function NewsModal() {
                     </button>
                 </div>
 
-                <div style={{ padding: '0.5rem 0' }}>
+                <div style={{ padding: '0.5rem 0', flex: 1, overflowY: 'auto', minHeight: 0 }}>
 
                     <div style={{ color: 'var(--color-text-muted)', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
                         {renderContentWithLinks(currentNews.content)}
@@ -125,7 +126,7 @@ export function NewsModal() {
                     </div>
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(0,0,0,0.1)', paddingTop: '1.5rem', marginTop: '1rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(0,0,0,0.1)', paddingTop: '1rem', marginTop: '0.75rem', flexShrink: 0 }}>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: '0.95rem' }}>
                         <input type="checkbox" checked={dontShowAgain} onChange={(e) => setDontShowAgain(e.target.checked)} style={{ width: '1.2rem', height: '1.2rem', accentColor: 'var(--color-primary)' }} />
                         {t('doNotShowAgain') || 'Do not show this news again'}
