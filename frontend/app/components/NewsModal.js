@@ -142,7 +142,7 @@ export function NewsModal() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(0,0,0,0.1)', paddingTop: '1rem', marginTop: '0.75rem', flexShrink: 0 }}>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: '0.95rem' }}>
                         <input type="checkbox" checked={dontShowAgain} onChange={(e) => setDontShowAgain(e.target.checked)} style={{ width: '1.2rem', height: '1.2rem', accentColor: 'var(--color-primary)' }} />
-                        {t('doNotShowAgain') || 'Do not show this news again'}
+                        Don't show again
                     </label>
 
                     <button className="btn btn-primary" onClick={handleClose}>
